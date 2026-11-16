@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>소프트웨어 직무 계보 — 1940년대부터 지금까지</title>
+<meta name="description" content="1940년대부터 2025년까지 104개 소프트웨어 직무의 계보를 7개 계열과 시간축으로 시각화한 인터랙티브 페이지입니다. Ian Miell의 원작을 한국어로 재해석한 비공식 한국어판입니다." />
+<meta name="theme-color" content="#070912" />
+<link rel="stylesheet" href="assets/styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%230b0f1f'/><circle cx='34' cy='32' r='9' fill='%235eead4'/><circle cx='66' cy='32' r='9' fill='%238b5cf6'/><circle cx='50' cy='68' r='9' fill='%23f472b6'/><path d='M34 32 L50 68 M66 32 L50 68' stroke='%23ffffff' stroke-opacity='.5' stroke-width='4'/></svg>" />
+</head>
+<body>
+<a class="skip" href="#chart">계보로 바로 가기</a>
+
+<header class="hero">
+  <div class="hero-bg" aria-hidden="true">
+    <span class="orb orb-a"></span>
+    <span class="orb orb-b"></span>
+    <span class="orb orb-c"></span>
+    <span class="grid-lines"></span>
+  </div>
+
+  <div class="hero-inner">
+    <p class="eyebrow"><span class="dot"></span>비공식 한국어판 · 재해석</p>
+    <h1>
+      소프트웨어 직무 <span class="grad">계보</span>
+    </h1>
+    <p class="lede">
+      1940년대의 ‘계산하는 사람’에서 2025년의 AI 에이전트 엔지니어까지.
+      <strong>104개</strong> 직함이 <strong>7개</strong> 계열로 갈라지고 다시 만나는 과정을 한 장의 가계도로 펼쳤습니다.
+      실선은 직계 파생, 점선은 영향과 경력 이동입니다.
+    </p>
+
+    <div class="hero-stats">
+      <div class="stat"><b data-count="104">0</b><span>직무</span></div>
+      <div class="stat"><b data-count="7">0</b><span>계열</span></div>
+      <div class="stat"><b data-count="17">0</b><span>시대 구간</span></div>
+      <div class="stat"><b data-count="85">0</b><span>년의 역사</span></div>
+    </div>
+
+    <div class="hero-actions">
+      <a class="btn primary" href="#chart">계보 탐색하기</a>
+      <a class="btn ghost" href="#stories">이야기 카드 보기</a>
+    </div>
+
+    <p class="notice">
+      <span class="badge">주의</span>
+      모든 연도는 그 직함이 흔히 쓰이기 시작한 시점을 옮긴 <b>제작자 추정치(c.)</b>이며, 최초 사용 연도가 아닙니다.
+    </p>
+  </div>
+</header>
+
+<nav class="controls" aria-label="계보 탐색 도구">
+  <div class="controls-row">
+    <div class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+      <input id="search" type="search" placeholder="직무 검색 — 예: SRE, 데이터, 플랫폼" autocomplete="off" aria-label="직무 검색(한글 또는 영문)" />
+      <button id="searchClear" class="icon-btn" type="button" aria-label="검색어 지우기" hidden>×</button>
+    </div>
+    <div class="zoom" role="group" aria-label="확대·축소">
+      <button id="zoomOut" class="icon-btn" type="button" aria-label="축소">−</button>
+      <button id="zoomFit" class="icon-btn wide" type="button" aria-label="화면 폭에 맞추기">맞춤</button>
+      <button id="zoomIn" class="icon-btn" type="button" aria-label="확대">+</button>
+    </div>
+  </div>
+
+  <div class="controls-row wrap">
+    <div class="chips" id="familyChips" role="group" aria-label="계열 필터"></div>
+    <p class="hint" id="resultHint" aria-live="polite"></p>
+  </div>
+
+  <div class="era-bar" id="eraBar" aria-label="시대 점프"></div>
+</nav>
+
+<main id="chart" class="chart-shell">
+  <div class="chart-head">
+    <h2>계보도</h2>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="scroll-hint" id="scrollHint">← 옆으로 밀어 전체 계열을 보세요 →</div>
+
+  <div class="stage" id="stage">
+    <div class="canvas" id="canvas">
+      <svg class="edges" id="edges" aria-hidden="true"></svg>
+      <div class="eras-gutter" id="erasGutter" aria-hidden="true"></div>
+      <div class="nodes" id="nodes"></div>
+    </div>
+  </div>
+</main>
+
+<aside class="panel" id="panel" aria-hidden="true" aria-labelledby="panelTitle" role="dialog">
+  <div class="panel-grip" aria-hidden="true"></div>
+  <button class="panel-close" id="panelClose" type="button" aria-label="상세 닫기">✕</button>
+  <div class="panel-body" id="panelBody"></div>
+</aside>
+<div class="scrim" id="scrim" hidden></div>
+
+<section class="stories" id="stories">
+  <div class="section-head">
+    <h2>일곱 가지 이야기</h2>
+    <p>직함은 왜 생기고, 왜 사라지고, 왜 이름만 바뀔까요. 계보도에서 읽어 낸 일곱 장면입니다.</p>
+  </div>
+  <div class="story-grid" id="storyGrid"></div>
+</section>
+
+<section class="about" id="about">
+  <div class="about-card">
+    <h2>이 페이지에 대하여</h2>
+    <p>
+      이 페이지는 <b>Ian Miell</b>의 글
+      <a href="https://zwischenzugs.com/2026/11/03/a-family-tree-of-software-job-titles/" target="_blank" rel="noopener">“A Family Tree of Software Job Titles”</a>와
+      그가 만든 <a href="https://ianmiell.github.io/sw-job-title-family-tree/" target="_blank" rel="noopener">대화형 계보도</a>,
+      저장소 <a href="https://github.com/ianmiell/sw-job-title-family-tree" target="_blank" rel="noopener">ianmiell/sw-job-title-family-tree</a>를
+      바탕으로 다시 만든 <b>비공식 한국어판·재해석</b>입니다. 원본의 <code>.dot</code> 파일과 <code>descriptions.json</code>에서
+      직무명·계열·연도·관계를 재구성했고, 설명문은 원문을 옮기지 않고 한국어로 새로 썼습니다.
+    </p>
+    <p>
+      원본 저장소에는 라이선스 파일이 표기되어 있지 않습니다. 따라서 이 한국어판도 권리를 주장하지 않으며,
+      원작자의 요청이 있으면 언제든 수정하거나 삭제합니다. 원본 아이디어와 데이터 구조의 공은 전적으로 원작자에게 있습니다.
+    </p>
+    <p class="quote">
+      GeekNews에서 이 작업을 알게 되었습니다 —
+      <a href="https://news.hada.io/topic?id=37182" target="_blank" rel="noopener">news.hada.io/topic?id=37182</a>
+    </p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p><b>비공식 한국어판·재해석</b> · 원작 <a href="https://zwischenzugs.com/2026/11/03/a-family-tree-of-software-job-titles/" target="_blank" rel="noopener">Ian Miell</a> ·
+      <a href="https://ianmiell.github.io/sw-job-title-family-tree/" target="_blank" rel="noopener">원본 대화형 페이지</a> ·
+      <a href="https://github.com/ianmiell/sw-job-title-family-tree" target="_blank" rel="noopener">원본 저장소</a> ·
+      <a href="https://news.hada.io/topic?id=37182" target="_blank" rel="noopener">GeekNews</a>
+    </p>
+    <p class="fine">라이선스 미표기 원본을 바탕으로 한 비영리 재해석입니다. 연도는 추정치(c.)이며 원작자 요청 시 수정·삭제합니다.</p>
+  </div>
+</footer>
+
+<script src="data/core.js"></script>
+<script src="data/jobs-1.js"></script>
+<script src="data/jobs-2.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
