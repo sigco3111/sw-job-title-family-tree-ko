@@ -74,7 +74,7 @@ jobs:
           }
           console.log('OK: hero title is one line at every checked width');
           EOF
-          node title-check.mjs
+          node title-check.mjs 2>&1 | tee result.txt; { echo '```'; cat result.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"; grep -q '^OK:' result.txt
 
       - name: Refresh screenshots
         if: ${{ inputs.commit_screenshots }}
