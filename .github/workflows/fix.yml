@@ -1,0 +1,110 @@
+name: fix
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 중첩 경로 정리
+        run: |
+          set -e
+          git config user.name "sigco3111"
+          git config user.email "sigco3111@users.noreply.github.com"
+          for f in data/*/*.js assets/*/*.css assets/*/*.js; do
+            [ -f "$f" ] || continue
+            dir=$(dirname "$f"); base=$(basename "$f")
+            if [ "$(basename "$dir")" = "$base" ]; then
+              mv "$f" "$dir.tmp" && rmdir "$dir" && mv "$dir.tmp" "$dir"
+              echo "moved $f -> $dir"
+            fi
+          done
+          python3 - <<'PY'
+          import io
+          p='index.html'
+          s=io.open(p,encoding='utf-8').read()
+          if 'data/stories.js' not in s:
+              s=s.replace('<script src="assets/app.js"></script>','<script src="data/stories.js"></script>\n<script src="assets/app.js"></script>')
+              io.open(p,'w',encoding='utf-8').write(s)
+              print('stories linked')
+          else:
+              print('already linked')
+          io.open('.nojekyll','w').write('')
+          PY
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "fix: 중첩 경로 정리·스토리 스크립트 연결·.nojekyll 추가"
+            git push
+          else
+            echo "no change"
+          fi
+
+      - name: 배포 대기
+        run: |
+          for i in $(seq 1 40); do
+            C1=$(curl -s -o /dev/null -w "%{http_code}" https://sigco3111.github.io/sw-job-title-family-tree-ko/assets/app.js)
+            C2=$(curl -s -o /dev/null -w "%{http_code}" https://sigco3111.github.io/sw-job-title-family-tree-ko/data/core.js)
+            echo "try $i app.js=$C1 core.js=$C2"
+            if [ "$C1" = "200" ] && [ "$C2" = "200" ]; then echo READY; break; fi
+            sleep 10
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Playwright 설치
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm i playwright@1.47.2 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: 캡처
+        run: |
+          mkdir -p docs/screenshots
+          cat > shot.js <<'JS'
+          const { chromium } = require('playwright');
+          const URL = 'https://sigco3111.github.io/sw-job-title-family-tree-ko/';
+          (async () => {
+            const browser = await chromium.launch();
+            const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+            const page = await ctx.newPage();
+            page.on('pageerror', e => console.log('PAGEERROR:', e.message));
+            page.on('console', m => { if (m.type() === 'error') console.log('CONSOLE:', m.text()); });
+            const res = await page.goto(URL, { waitUntil: 'networkidle' });
+            console.log('status:', res.status());
+            await page.waitForSelector('button.node', { timeout: 30000 });
+            console.log('nodes:', await page.locator('button.node').count());
+            console.log('stories:', await page.locator('.story').count());
+            await page.waitForTimeout(1500);
+            await page.screenshot({ path: 'docs/screenshots/desktop-1280x800.png' });
+            await page.locator('button.node[data-id="sre"]').click();
+            await page.waitForTimeout(900);
+            await page.screenshot({ path: 'docs/screenshots/detail-panel-1280x800.png' });
+            await ctx.close();
+            const mctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+            const mp = await mctx.newPage();
+            const res2 = await mp.goto(URL, { waitUntil: 'networkidle' });
+            console.log('mobile status:', res2.status());
+            await mp.waitForSelector('button.node', { timeout: 30000 });
+            await mp.waitForTimeout(1500);
+            await mp.screenshot({ path: 'docs/screenshots/mobile-390x844.png' });
+            await mctx.close();
+            await browser.close();
+          })();
+          JS
+          node shot.js
+          ls -la docs/screenshots
+
+      - name: 스크린샷 커밋
+        run: |
+          git config user.name "sigco3111"
+          git config user.email "sigco3111@users.noreply.github.com"
+          git add docs/screenshots
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: 배포 페이지 스크린샷 추가(데스크톱·상세 패널·모바일)"
+            git push
+          fi
