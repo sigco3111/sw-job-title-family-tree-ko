@@ -90,9 +90,9 @@ jobs:
           await desktop.goto(url, { waitUntil: 'networkidle' });
           await desktop.waitForSelector('.hero h1');
           await desktop.screenshot({ path: 'docs/screenshots/desktop-1280x800.png' });
-          await desktop.getByRole('button', { name: /^프로그래머/ }).first().click();
-          await desktop.waitForTimeout(700);
-          await desktop.screenshot({ path: 'docs/screenshots/detail-panel-1280x800.png' });
+          await desktop.goto(url + '#sre', { waitUntil: 'networkidle' });
+          await desktop.waitForTimeout(1200);
+          await desktop.evaluate(() => window.scrollTo(0, 0)); await desktop.waitForTimeout(400); await desktop.screenshot({ path: 'docs/screenshots/detail-panel-1280x800.png' });
           await desktop.close();
 
           const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
